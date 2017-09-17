@@ -5,13 +5,9 @@
 
 using CppAD::AD;
 
-// TODO: Tune Hyperparameters
-// 15, 20 and 25 caused the car to spin out on turns
-// 10 could do laps around, but it was too unstable on some turns
-// I noticed that the furthest points were throwing the predicted directions off
-// 8 drives smoother, but it turns a little late
-size_t N = 10;
-double dt = .1; // the latency is 100 ms, so it cannot be lower than .1 seconds
+// Tune Hyperparameters
+size_t N = 10; // kept small for performance
+double dt = .1; // best to keep this small
 
 /*
  * Using the values from the Quiz to start
@@ -38,11 +34,18 @@ const double Lf = 2.67;
  * Both the reference cross track and orientation errors are 0.
  * The reference velocity is set to 40 mph.
  */
-double ref_v = 40; // TODO tune
+double ref_v = 50; // TODO tune
 
 // smoothing contstants
-short temporal_smoothing = 500;
+short temporal_smoothing = 700;
 short acceleration_smoothing = 100; // value can't be too high or it will brake too slow
+
+// error constraints
+short error_constraint = 500;
+
+// speed, steering, velocity constraint
+short steer_constraint = 100;
+short speed_constraint = 100;
 
 /*
  * The solver takes all the state variables and actuator variables in a singular vector. Thus, we should to establish
@@ -82,16 +85,16 @@ public:
         // The part of the cost based on the reference state.
         for(unsigned int t = 0; t < N; t++) {
             // TODO play with penalizing these as well
-            fg[0] += CppAD::pow(vars[cte_start + t], 2);
-            fg[0] += CppAD::pow(vars[epsi_start + t], 2);
+            fg[0] += error_constraint * CppAD::pow(vars[cte_start + t], 2);
+            fg[0] += error_constraint * CppAD::pow(vars[epsi_start + t], 2);
             fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
         }
 
         // Minimize the use of actuators.
         for(unsigned int t = 0; t < N - 1; t++) {
             // TODO may be able to hit higher speeds if you penalize steering angle, speed and acceleration
-            fg[0] += CppAD::pow(vars[delta_start + t], 2);
-            fg[0] += CppAD::pow(vars[a_start + t], 2);
+            fg[0] += steer_constraint * CppAD::pow(vars[delta_start + t], 2);
+            fg[0] += speed_constraint * CppAD::pow(vars[a_start + t], 2);
         }
 
         // Minimize the value gap between sequential actuations.
@@ -103,7 +106,7 @@ public:
         /*
          * Setup Constraints
          *
-         * NOTE: In this section you'll setup the model constraints.
+         * NOTE: In this section I setup the model constraints.
          *
          * Initial constraints
          *
@@ -160,6 +163,7 @@ public:
              *      cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
              *      epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
              */
+            // Kinematic Equations applied here before passing to the solver
             fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
             fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
             fg[1 + psi_start + t] = psi1 - (psi0 + v0 * delta0 / Lf * dt);

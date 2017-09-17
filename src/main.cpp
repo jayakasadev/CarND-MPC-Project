@@ -142,7 +142,6 @@ int main() {
                     // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
                     double epsi = psi - atan(coeffs[1]);
 
-
                     // using regular map coordinates
                     Eigen::VectorXd state(6);
                     state << 0, 0, 0, v, cte, epsi; // everything was converted to the car space, so the car will be at 0, 0, 0
