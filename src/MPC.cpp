@@ -6,16 +6,20 @@
 using CppAD::AD;
 
 // TODO: Tune Hyperparameters
-// size_t N = 0;
-// double dt = 0;
+// 15, 20 and 25 caused the car to spin out on turns
+// 10 could do laps around, but it was too unstable on some turns
+// I noticed that the furthest points were throwing the predicted directions off
+// 8 drives smoother, but it turns a little late
+size_t N = 10;
+double dt = .1; // the latency is 100 ms, so it cannot be lower than .1 seconds
 
 /*
  * Using the values from the Quiz to start
  *
  * We set the number of timesteps to 25 and the timestep evaluation frequency or evaluation period to 0.05.
  */
-size_t N = 10;
-double dt = 0.1;
+// size_t N = 25;
+// double dt = 0.05;
 
 /*
  * This value assumes the model presented in the classroom is used.
@@ -35,6 +39,10 @@ const double Lf = 2.67;
  * The reference velocity is set to 40 mph.
  */
 double ref_v = 40; // TODO tune
+
+// smoothing contstants
+short temporal_smoothing = 500;
+short acceleration_smoothing = 100; // value can't be too high or it will brake too slow
 
 /*
  * The solver takes all the state variables and actuator variables in a singular vector. Thus, we should to establish
@@ -72,22 +80,24 @@ public:
         fg[0] = 0;
 
         // The part of the cost based on the reference state.
-        for (int t = 0; t < N; t++) {
+        for(unsigned int t = 0; t < N; t++) {
+            // TODO play with penalizing these as well
             fg[0] += CppAD::pow(vars[cte_start + t], 2);
             fg[0] += CppAD::pow(vars[epsi_start + t], 2);
             fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
         }
 
         // Minimize the use of actuators.
-        for (int t = 0; t < N - 1; t++) {
+        for(unsigned int t = 0; t < N - 1; t++) {
+            // TODO may be able to hit higher speeds if you penalize steering angle, speed and acceleration
             fg[0] += CppAD::pow(vars[delta_start + t], 2);
             fg[0] += CppAD::pow(vars[a_start + t], 2);
         }
 
         // Minimize the value gap between sequential actuations.
-        for (int t = 0; t < N - 2; t++) {
-            fg[0] += 700 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-            fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+        for(unsigned int t = 0; t < N - 2; t++) {
+            fg[0] += temporal_smoothing * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); // includes temporal smoothing
+            fg[0] += acceleration_smoothing * CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
         }
 
         /*
@@ -108,7 +118,7 @@ public:
         fg[1 + epsi_start] = vars[epsi_start];
 
         // The rest of the constraints
-        for (int t = 1; t < N; t++) {
+        for(unsigned int t = 1; t < N; t++) {
             // The state at time t+1 .
             AD<double> x1 = vars[x_start + t];
             AD<double> y1 = vars[y_start + t];
@@ -128,6 +138,12 @@ public:
             // Only consider the actuation at time t.
             AD<double> delta0 = vars[delta_start + t - 1];
             AD<double> a0 = vars[a_start + t - 1];
+
+            // handling latency here by using previous actuations
+            if (t > 1) {
+                a0 = vars[a_start + t - 2];
+                delta0 = vars[delta_start + t - 2];
+            }
 
             AD<double> f0 = coeffs[0] + coeffs[1] * x0;
             AD<double> psides0 = CppAD::atan(coeffs[1]);
@@ -164,7 +180,7 @@ MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     bool ok = true;
-    size_t i;
+    // size_t i; // never used
     typedef CPPAD_TESTVECTOR(double) Dvector;
 
     double x = state[0];
@@ -283,7 +299,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
      * NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
      * Change this as you see fit.
      */
-    options += "Numeric max_cpu_time          0.5\n";
+    options += "Numeric max_cpu_time          0.5\n";// TODO tune
 
     // place to return solution
     CppAD::ipopt::solve_result<Dvector> solution;

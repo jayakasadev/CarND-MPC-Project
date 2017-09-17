@@ -122,7 +122,7 @@ int main() {
                     }
                      */
 
-                    / /cout << "[px -> " << px << " py -> " << py << " psi -> " << psi << " v -> " << v << endl;
+                    //cout << "[px -> " << px << " py -> " << py << " psi -> " << psi << " v -> " << v << endl;
 
                     transformToCarCoordinates(ptsx, ptsy, px, py, psi);
 
@@ -140,7 +140,7 @@ int main() {
                     double cte = polyeval(coeffs, 0);  // px = 0, py = 0
                     // Due to the sign starting at 0, the orientation error is -f'(x).
                     // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
-                    double epsi = -atan(coeffs[1]);
+                    double epsi = psi - atan(coeffs[1]);
 
 
                     // using regular map coordinates
