@@ -1,4 +1,6 @@
 # Model Predictive Control
+The goal of this project was to create a vehicle controller based on Kinematic Equations to help a simulated vechile drive around a track autonomously. The controller is given the coordinates for the reference trajectory (desired path), and it returns the steering angle and throttle value to the actuator to help the car safely drive around the track. 
+To help with visualization, the desired path and the vehicle's calculated trajectory are visualized in yellow and green, respectively.
 
 # The Model
 For this project I made use of the kinematic model.
@@ -33,7 +35,7 @@ With N = 10 and dt = 0.1, the optimizer is only determining a corrective traject
 
 # Polynomial Fitting and MPC Preprocessing
 The incoming map coordinates are transformed to the vehicle's perspective. 
-This simplifies the process of fitting a polynomial to the coordinates because the vehicle's x and y coordinates are now at the origin (0, 0) and the orientation angle is also zero.
+This simplifies the process of fitting a polynomial to the coordinates because the ehicle's x and y coordinates are now at the origin (0, 0) and the orientation angle is also zero.
 
 # Model Predictive Control with Latency
 The approach to dealing with latency has multiple parts:
