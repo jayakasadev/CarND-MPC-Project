@@ -1,5 +1,5 @@
 # Model Predictive Control
-The goal of this project was to create a vehicle controller based on Kinematic Equations to help a simulated vechile drive around a track autonomously. The controller is given the coordinates for the reference trajectory (desired path), and it returns the steering angle and throttle value to the actuator to help the car safely drive around the track. 
+The goal of this project was to create a vehicle controller based on Kinematic Equations to help a simulated vehicle drive around a track autonomously. The controller is given the coordinates for the reference trajectory (desired path), and it returns the steering angle and throttle value to the actuator to help the car safely drive around the track. 
 To help with visualization, the desired path and the vehicle's calculated trajectory are visualized in yellow and green, respectively.
 
 # The Model
